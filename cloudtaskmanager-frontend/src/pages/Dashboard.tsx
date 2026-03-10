@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import PreviousTasks from "../components/PreviousTasks";
 
 interface Task {
   _id: string;
   title: string;
   description: string;
   status: string;
+  date?: string;
 }
 
 function Dashboard() {
@@ -14,9 +16,35 @@ function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const navigate = useNavigate();
+  const [date, setDate] = useState("");
+  const [randomMessage, setRandomMessage] = useState("");
 
+  const navigate = useNavigate();
+  const notifiedTasks = useRef(new Set<string>());
+
+  // 🌟 Positive messages
+  const messages = [
+    "Stay focused and finish your tasks! 🚀",
+    "You’re doing great today! Keep going! 💪",
+    "Small progress is still progress! 📈",
+    "Make today productive and awesome! 🔥",
+    "Believe in yourself and keep building! ✨",
+    "Your future self will thank you! 😄",
+    "Consistency beats motivation! ⚡"
+  ];
+
+  // 🌞 Time-based greeting
+  const hour = new Date().getHours();
+
+  let greeting = "Hello";
+
+  if (hour < 12) greeting = "Good Morning";
+  else if (hour < 18) greeting = "Good Afternoon";
+  else greeting = "Good Evening";
+
+  // 🔹 Fetch tasks
   const fetchTasks = async () => {
+
     try {
 
       const token = localStorage.getItem("token");
@@ -30,12 +58,16 @@ function Dashboard() {
       setTasks(response.data);
 
     } catch (error) {
+
       console.log("Error fetching tasks", error);
+
     }
+
   };
 
-  
+  // 🔹 Add task
   const handleAddTask = async (e: React.FormEvent) => {
+
     e.preventDefault();
 
     try {
@@ -46,7 +78,8 @@ function Dashboard() {
         "/tasks",
         {
           title,
-          description
+          description,
+          date
         },
         {
           headers: {
@@ -57,16 +90,21 @@ function Dashboard() {
 
       setTitle("");
       setDescription("");
+      setDate("");
 
       fetchTasks();
 
     } catch (error) {
+
       console.log("Error creating task", error);
+
     }
+
   };
 
- 
+  // 🔹 Delete task
   const handleDeleteTask = async (id: string) => {
+
     try {
 
       const token = localStorage.getItem("token");
@@ -80,11 +118,14 @@ function Dashboard() {
       fetchTasks();
 
     } catch (error) {
+
       console.log("Error deleting task", error);
+
     }
+
   };
 
-  
+  // 🔹 Complete task
   const handleCompleteTask = async (id: string) => {
 
     try {
@@ -104,33 +145,93 @@ function Dashboard() {
       fetchTasks();
 
     } catch (error) {
+
       console.log("Error updating task", error);
+
     }
 
   };
 
-  
+  // 🔹 Logout
   const handleLogout = () => {
 
     localStorage.removeItem("token");
-
     navigate("/");
 
   };
 
+  // 🔔 Ask notification permission + load message
   useEffect(() => {
+
+    if (Notification.permission !== "granted") {
+
+      Notification.requestPermission();
+
+    }
+
     fetchTasks();
+
+    const random =
+      messages[Math.floor(Math.random() * messages.length)];
+
+    setRandomMessage(random);
+
   }, []);
+
+  // 🔔 Notification system (1 hour before)
+  useEffect(() => {
+
+    const interval = setInterval(() => {
+
+      const now = new Date();
+
+      tasks.forEach((task) => {
+
+        if (task.date && !notifiedTasks.current.has(task._id)) {
+
+          const taskTime = new Date(task.date);
+
+          const diff = taskTime.getTime() - now.getTime();
+
+          if (diff > 0 && diff <= 3600000) {
+
+            new Notification("⏰ Upcoming Task Reminder", {
+              body: `${task.title} starts in 1 hour`
+            });
+
+            notifiedTasks.current.add(task._id);
+
+          }
+
+        }
+
+      });
+
+    }, 60000);
+
+    return () => clearInterval(interval);
+
+  }, [tasks]);
 
   return (
 
     <div className="container py-5">
 
-      
+      {/* Header */}
 
       <div className="d-flex justify-content-between align-items-center mb-4">
 
-        <h2 className="fw-bold">Task Dashboard</h2>
+        <div>
+
+          <h2 className="fw-bold">
+            {greeting} Ashwin 👋
+          </h2>
+
+          <p className="text-muted">
+            {randomMessage}
+          </p>
+
+        </div>
 
         <button
           className="btn btn-outline-danger"
@@ -141,7 +242,7 @@ function Dashboard() {
 
       </div>
 
-      
+      {/* Add Task */}
 
       <div className="card shadow-sm mb-4">
 
@@ -153,7 +254,8 @@ function Dashboard() {
 
             <div className="row g-2">
 
-              <div className="col-md-4">
+              <div className="col-md-3">
+
                 <input
                   type="text"
                   className="form-control"
@@ -162,9 +264,11 @@ function Dashboard() {
                   onChange={(e) => setTitle(e.target.value)}
                   required
                 />
+
               </div>
 
-              <div className="col-md-6">
+              <div className="col-md-4">
+
                 <input
                   type="text"
                   className="form-control"
@@ -173,12 +277,26 @@ function Dashboard() {
                   onChange={(e) => setDescription(e.target.value)}
                   required
                 />
+
+              </div>
+
+              <div className="col-md-3">
+
+                <input
+                  type="datetime-local"
+                  className="form-control"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+
               </div>
 
               <div className="col-md-2">
+
                 <button className="btn btn-success w-100">
                   Add
                 </button>
+
               </div>
 
             </div>
@@ -189,80 +307,18 @@ function Dashboard() {
 
       </div>
 
-      
+      {/* Task List */}
 
-      <div className="card shadow-sm">
-
-        <div className="card-body">
-
-          <h5 className="card-title mb-3">Your Tasks</h5>
-
-          {tasks.length === 0 ? (
-            <p className="text-muted">No tasks available</p>
-          ) : (
-            <div className="list-group">
-
-              {tasks.map((task) => (
-
-                <div
-                  key={task._id}
-                  className="list-group-item d-flex justify-content-between align-items-center"
-                >
-
-                  <div>
-
-                    <h6 className="mb-1 fw-semibold">
-                      {task.title}
-                    </h6>
-
-                    <small className="text-muted">
-                      {task.description}
-                    </small>
-
-                    <div className="mt-2">
-
-                      <span
-                        className={
-                          task.status === "Completed"
-                            ? "badge bg-success me-2"
-                            : "badge bg-warning text-dark me-2"
-                        }
-                      >
-                        {task.status}
-                      </span>
-
-                      <button
-                        className="btn btn-primary btn-sm me-2"
-                        onClick={() => handleCompleteTask(task._id)}
-                      >
-                        Complete
-                      </button>
-
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDeleteTask(task._id)}
-                      >
-                        Delete
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              ))}
-
-            </div>
-          )}
-
-        </div>
-
-      </div>
+      <PreviousTasks
+        tasks={tasks}
+        onDelete={handleDeleteTask}
+        onComplete={handleCompleteTask}
+      />
 
     </div>
 
   );
+
 }
 
 export default Dashboard;
