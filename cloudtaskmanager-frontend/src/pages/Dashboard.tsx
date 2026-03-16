@@ -22,7 +22,6 @@ function Dashboard() {
   const navigate = useNavigate();
   const notifiedTasks = useRef(new Set<string>());
 
-  // 🌟 Positive messages
   const messages = [
     "Stay focused and finish your tasks! 🚀",
     "You’re doing great today! Keep going! 💪",
@@ -42,7 +41,7 @@ function Dashboard() {
   else if (hour < 18) greeting = "Good Afternoon";
   else greeting = "Good Evening";
 
-  // 🔹 Fetch tasks
+
   const fetchTasks = async () => {
 
     try {
@@ -65,7 +64,7 @@ function Dashboard() {
 
   };
 
-  // 🔹 Add task
+
   const handleAddTask = async (e: React.FormEvent) => {
 
     e.preventDefault();
@@ -102,7 +101,7 @@ function Dashboard() {
 
   };
 
-  // 🔹 Delete task
+  
   const handleDeleteTask = async (id: string) => {
 
     try {
@@ -125,7 +124,7 @@ function Dashboard() {
 
   };
 
-  // 🔹 Complete task
+ 
   const handleCompleteTask = async (id: string) => {
 
     try {
@@ -152,7 +151,7 @@ function Dashboard() {
 
   };
 
-  // 🔹 Logout
+
   const handleLogout = () => {
 
     localStorage.removeItem("token");
@@ -160,7 +159,7 @@ function Dashboard() {
 
   };
 
-  // 🔔 Ask notification permission + load message
+  
   useEffect(() => {
 
     if (Notification.permission !== "granted") {
@@ -178,7 +177,6 @@ function Dashboard() {
 
   }, []);
 
-  // 🔔 Notification system (1 hour before)
   useEffect(() => {
 
     const interval = setInterval(() => {
